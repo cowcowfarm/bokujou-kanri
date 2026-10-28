@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#245c35">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>牧場管理</title>
+<style>
+:root{--green:#245c35;--pale:#e8f2e8;--bg:#f5f7f5;--ink:#203026;--line:#d9e2da;--blue:#e8f0fc;--orange:#fcebd8;--purple:#f1e8fa}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
+header{background:var(--green);color:white;padding:20px 16px 16px;text-align:center}header h1{margin:0;font-size:25px}header p{margin:5px 0 0;font-size:13px;opacity:.9}
+main{max-width:720px;margin:auto;padding:14px 12px 40px}.notice{background:#fff8dd;border:1px solid #f0dda0;padding:11px;border-radius:12px;font-size:13px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.tile{border:0;border-radius:16px;padding:18px 10px;min-height:100px;font-size:17px;font-weight:700;color:var(--ink);background:white;box-shadow:0 1px 4px #00000012}.tile span{display:block;font-size:12px;font-weight:500;margin-top:5px}.tile.blue{background:var(--blue)}.tile.orange{background:var(--orange)}.tile.teal{background:#e6f3f5}.tile.purple{background:var(--purple)}.tile.green{background:var(--pale)}
+.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0}.hidden{display:none!important}h2{font-size:20px;margin:4px 0 12px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.btn{border:0;border-radius:11px;padding:12px 14px;background:var(--green);color:white;font-weight:650;font-size:15px}.btn.light{background:#e9eee9;color:#233128}.btn.danger{background:#a62c2c}.btn:disabled{opacity:.45}label{display:block;font-size:13px;font-weight:650;margin:12px 0 5px}input,select,textarea{width:100%;font:inherit;font-size:16px;padding:11px;border:1px solid #bfcbbf;border-radius:10px;background:white;color:var(--ink)}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.cow{border:1px solid var(--line);border-radius:13px;background:white;padding:12px;margin:9px 0}.cow.pregnant{background:#e5f5e7;border-color:#73b77b}.cow.not-pregnant{background:#eef0f2;border-color:#b9bec4}.cow.excluded{background:#fff0df;border-color:#e7a45c}.tag.pregnant{background:#bfe8c5;color:#174d24}.tag.not-pregnant{background:#d9dde1;color:#42484e}.tag.excluded{background:#ffd5a8;color:#78400b}.cowtop{display:flex;justify-content:space-between;gap:8px;align-items:start}.cow strong{font-size:17px}.sub{font-size:13px;color:#526157;margin-top:5px;line-height:1.55}.tag{font-size:12px;background:var(--pale);padding:4px 7px;border-radius:7px;white-space:nowrap}.empty{color:#657168;text-align:center;padding:22px 8px}.small{font-size:12px;color:#667168}.count{font-weight:700;color:var(--green)}.filelabel{display:inline-block;padding:12px 14px;background:#e9eee9;border-radius:11px;font-weight:650}
+@media(max-width:390px){.formgrid{grid-template-columns:1fr}.tile{min-height:90px}}
+</style>
+</head>
+<body>
+<header><h1>🐄 牧場管理</h1><p>スマホで使う、自分用の牛管理</p></header>
+<main>
+<div class="notice">このアプリは端末内にデータを保存します。大切なデータを守るため、ときどき「バックアップ保存」をしてください。</div>
+<section id="home">
+<div class="grid">
+<button class="tile blue" onclick="openList('全頭一覧')">📋 全頭一覧<span>登録した牛を探す</span></button>
+<button class="tile orange" onclick="openList('ハッチ')">🔢 ハッチ<span>1〜23</span></button>
+<button class="tile teal" onclick="openList('つなぎ')">🔢 つなぎ<span>1〜20</span></button>
+<button class="tile purple" onclick="openList('育成')">🐄 育成<span>A・B・C など</span></button>
+<button class="tile green" onclick="openList('搾乳')">🥛 搾乳<span>A・B</span></button>
+<button class="tile orange" onclick="openList('乾乳')">🌿 乾乳<span>乾乳牛</span></button>
+<button class="tile green" style="grid-column:1/-1" onclick="newCow()">➕ 牛を登録<span>個体番号・生年月日・飼育場所など</span></button>
+</div>
+<div class="panel">
+<h2>データの保存・移行</h2>
+<div class="small">以前の145頭のバックアップを読み込む場合は、JSONファイルを選んでください。読み込む前に現在のデータをバックアップ保存するのがおすすめです。</div>
+<div class="actions"><button class="btn" onclick="exportData()">バックアップ保存</button><label class="filelabel" for="importFile">バックアップ読込</label><input id="importFile" class="hidden" type="file" accept=".json,application/json" onchange="importData(event)"></div>
+<div id="status" class="small" aria-live="polite"></div>
+</div>
+</section>
+<section id="listPage" class="hidden">
+<div class="actions"><button class="btn light" onclick="home()">← トップへ戻る</button><button class="btn" onclick="newCow()">＋ 牛を登録</button></div>
+<h2 id="listTitle">全頭一覧</h2>
+<div class="panel">
+<label for="search">番号・個体識別番号で検索</label><input id="search" placeholder="番号を入力" oninput="renderList()">
+<div id="subgroups" class="actions"></div>
+<div class="small">表示頭数：<span class="count" id="count">0</span></div>
+</div>
+<div id="cowList"></div>
+</section>
+<section id="editPage" class="hidden">
+<div class="actions"><button class="btn light" onclick="backToList()">← 一覧へ戻る</button></div>
+<h2 id="editTitle">牛を登録</h2>
+<form id="cowForm" class="panel" onsubmit="saveCow(event)">
+<input id="cowId" type="hidden">
+<div class="formgrid">
+<div><label for="sex">性別</label><select id="sex"><option value="">選択してください</option><option value="オス">オス</option><option value="メス">メス</option></select></div>
+<div><label for="femaleNo">♀管理番号（メスの場合）</label><input id="femaleNo" inputmode="text" placeholder="手入力"></div>
+<div><label for="individualId">個体識別番号（10桁）</label><input id="individualId" inputmode="numeric" maxlength="10" placeholder="10桁"></div>
+<div><label for="birthDate">生年月日</label><input id="birthDate" type="date"></div>
+<div><label for="locationType">飼育場所</label><select id="locationType" onchange="updateLocationOptions()"><option value="">選択してください</option><option>ハッチ</option><option>つなぎ</option><option>育成</option><option>搾乳</option><option>乾乳</option></select></div>
+<div id="locationDetailWrap"><label for="locationDetail">場所・区分</label><select id="locationDetail"><option value="">先に飼育場所を選択</option></select></div>
+<div><label for="cowType">種類</label><select id="cowType"><option value="">未選択</option><option>ホルスタイン</option><option>F1</option><option>和牛</option><option>その他</option></select></div>
+<div><label for="motherNo">母親の番号</label><input id="motherNo" placeholder="母牛の♀管理番号など"></div>
+<div><label for="sire">父親血統（名前）</label><input id="sire" placeholder="父親の名前"></div>
+<div><label for="pregnancy">繁殖状況</label><select id="pregnancy"><option>妊娠していない</option><option>妊娠</option><option>繁殖除外</option></select></div>
+<div><label for="pregnancyDate">妊娠した日</label><input id="pregnancyDate" type="date"></div>
+</div>
+<label for="notes">メモ</label><textarea id="notes" rows="2"></textarea>
+<div class="actions"><button class="btn" type="submit">保存</button><button class="btn light" type="button" onclick="backToList()">キャンセル</button><button id="deleteBtn" class="btn danger hidden" type="button" onclick="deleteCow()">削除</button></div>
+</form>
+</section>
+</main>
+<script>
+const KEY='farmManagerOfflineV1';
+let cows=[], currentList='全頭一覧', currentSub='';
+function load(){try{cows=JSON.parse(localStorage.getItem(KEY)||'[]');if(!Array.isArray(cows))cows=[]}catch(e){cows=[]}}
+function persist(){localStorage.setItem(KEY,JSON.stringify(cows))}
+function home(){['home','listPage','editPage'].forEach(id=>document.getElementById(id).classList.add('hidden'));document.getElementById('home').classList.remove('hidden')}
+function openList(name){currentList=name;currentSub='';document.getElementById('home').classList.add('hidden');document.getElementById('editPage').classList.add('hidden');document.getElementById('listPage').classList.remove('hidden');document.getElementById('listTitle').textContent=name;document.getElementById('search').value='';renderSubgroups();renderList()}
+function renderSubgroups(){let el=document.getElementById('subgroups');el.innerHTML='';el.style.display='flex';el.style.flexDirection='column';el.style.alignItems='stretch';el.style.gap='8px';let opts=[];if(currentList==='ハッチ')opts=Array.from({length:23},(_,i)=>String(i+1));if(currentList==='つなぎ')opts=Array.from({length:20},(_,i)=>String(i+1));if(currentList==='育成')opts=['A','B','C','搾入','間入'];if(currentList==='搾乳')opts=['A','B'];if(opts.length){let all=document.createElement('button');all.className='btn '+(!currentSub?'':'light');all.style.width='100%';all.style.textAlign='left';all.textContent='すべて表示';all.onclick=()=>{currentSub='';renderSubgroups();renderList()};el.appendChild(all);opts.forEach(x=>{let occupants=cows.filter(c=>typeOf(c)===currentList&&(detailOf(c)===x||String(c.current_location||'')===x));let labels=occupants.map(c=>{let id=String(c.female_management_number||'管理番号なし');let dob=String(c.birth_date_original||c.birth_date||'生年月日未登録');return id+'　生年月日：'+dob+'　母親番号：'+String(c.mother_number||'未登録')+'　種類：'+String(c.cow_type||'未選択')});let b=document.createElement('button');b.className='btn '+(currentSub===x?'':'light');b.style.width='100%';b.style.display='block';b.style.textAlign='left';b.style.whiteSpace='pre-line';b.style.minHeight='54px';b.textContent=(currentList==='育成'||currentList==='搾乳'?x:x+'番')+'\n'+(labels.length?labels.join('\n'):'登録牛なし');b.onclick=()=>{currentSub=x;renderSubgroups();renderList()};el.appendChild(b)})}}
+function place(c){return [c.current_location||'',c.location_type||'',c.location_detail||''].filter(Boolean).join(' ')}
+function typeOf(c){return c.location_type||''}
+function detailOf(c){return c.location_detail||''}
+function renderList(){let q=document.getElementById('search').value.trim().toLowerCase();let arr=cows.filter(c=>{let typ=typeOf(c),det=detailOf(c);let groupOK=currentList==='全頭一覧'||typ===currentList||(currentList==='育成'&&typ==='育成')||(currentList==='搾乳'&&typ==='搾乳');let subOK=!currentSub||det===currentSub||String(c.current_location||'')===currentSub;let hay=[c.female_management_number,c.individual_id,c.mother_number,c.sire,place(c)].join(' ').toLowerCase();return groupOK&&subOK&&hay.includes(q)});arr.sort((a,b)=>String(a.birth_date_original||a.birth_date||'9999').localeCompare(String(b.birth_date_original||b.birth_date||'9999')));document.getElementById('count').textContent=arr.length;let list=document.getElementById('cowList');list.innerHTML='';if(!arr.length){list.innerHTML='<div class="empty">まだ登録データがありません。<br>「牛を登録」から登録できます。</div>';return}arr.forEach(c=>{let card=document.createElement('div');let status=c.pregnancy||'妊娠していない';let statusClass=status==='妊娠'?'pregnant':status==='繁殖除外'?'excluded':'not-pregnant';card.className='cow '+statusClass;let title=c.female_management_number||'管理番号なし';let badge=status;card.innerHTML='<div class="cowtop"><strong></strong><span class="tag"></span></div><div class="sub"></div><div class="actions"><button class="btn light">詳細・編集</button></div>';card.querySelector('strong').textContent=title;let tag=card.querySelector('.tag');tag.textContent=badge;tag.classList.add(statusClass);card.querySelector('.sub').textContent='個体識別番号：'+(c.individual_id||'未登録')+'　｜　生年月日：'+(c.birth_date_original||c.birth_date||'未登録')+'\n飼育場所：'+(place(c)||'未設定')+'\n母親：'+(c.mother_number||'未登録')+'\n父親：'+(c.sire||'未登録')+'\n種類：'+(c.cow_type||'未選択');card.querySelector('.sub').style.whiteSpace='pre-line';card.querySelector('button').onclick=()=>editCow(c);list.appendChild(card)})}
+function newCow(){document.getElementById('home').classList.add('hidden');document.getElementById('listPage').classList.add('hidden');document.getElementById('editPage').classList.remove('hidden');document.getElementById('cowForm').reset();document.getElementById('cowId').value='';document.getElementById('editTitle').textContent='牛を登録';document.getElementById('deleteBtn').classList.add('hidden');updateLocationOptions()}
+function editCow(c){newCow();document.getElementById('cowId').value=c.id;document.getElementById('editTitle').textContent='牛の情報';document.getElementById('sex').value=c.sex||'';document.getElementById('femaleNo').value=c.female_management_number||'';document.getElementById('individualId').value=c.individual_id||'';document.getElementById('birthDate').value=c.birth_date||'';document.getElementById('locationType').value=c.location_type||'';updateLocationOptions();document.getElementById('locationDetail').value=c.location_detail||'';document.getElementById('cowType').value=c.cow_type||'';document.getElementById('motherNo').value=c.mother_number||'';document.getElementById('sire').value=c.sire||'';document.getElementById('pregnancy').value=c.pregnancy||'妊娠していない';document.getElementById('pregnancyDate').value=c.pregnancy_date||'';document.getElementById('notes').value=c.notes||'';document.getElementById('deleteBtn').classList.remove('hidden')}
+function updateLocationOptions(){let t=document.getElementById('locationType').value,el=document.getElementById('locationDetail'),old=el.value;let opts=t==='ハッチ'?Array.from({length:23},(_,i)=>String(i+1)):t==='つなぎ'?Array.from({length:20},(_,i)=>String(i+1)):t==='育成'?['A','B','C','搾入','間入']:t==='搾乳'?['A','B']:t==='乾乳'?['乾乳']:[];el.innerHTML='<option value="">選択してください</option>';opts.forEach(v=>{let o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o)});if(opts.includes(old))el.value=old}
+function saveCow(e){e.preventDefault();let id=document.getElementById('cowId').value;let c={id:id||('cow-'+Date.now()+'-'+Math.random().toString(16).slice(2,7)),sex:document.getElementById('sex').value,female_management_number:document.getElementById('femaleNo').value.trim(),individual_id:document.getElementById('individualId').value.trim(),birth_date:document.getElementById('birthDate').value,birth_date_original:document.getElementById('birthDate').value,location_type:document.getElementById('locationType').value,location_detail:document.getElementById('locationDetail').value,cow_type:document.getElementById('cowType').value,mother_number:document.getElementById('motherNo').value.trim(),sire:document.getElementById('sire').value.trim(),pregnancy:document.getElementById('pregnancy').value,pregnancy_date:document.getElementById('pregnancyDate').value,notes:document.getElementById('notes').value};if(id){let i=cows.findIndex(x=>x.id===id);if(i>=0)cows[i]=c;else cows.push(c)}else cows.push(c);persist();document.getElementById('status').textContent='保存しました。';openList(currentList)}
+function deleteCow(){let id=document.getElementById('cowId').value;if(!id||!confirm('この牛の情報を削除しますか？'))return;cows=cows.filter(c=>c.id!==id);persist();openList(currentList)}
+function backToList(){if(!document.getElementById('listPage').classList.contains('hidden'))return;openList(currentList)}
+function exportData(){let blob=new Blob([JSON.stringify({app:'牧場管理',version:1,exportedAt:new Date().toISOString(),cows:cows},null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='牧場管理_バックアップ.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);document.getElementById('status').textContent='バックアップファイルを保存しました。'}
+function importData(e){let f=e.target.files&&e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);let incoming=Array.isArray(d)?d:(d.cows||d.records||[]);if(!Array.isArray(incoming))throw Error('データ形式が違います');if(!confirm(incoming.length+'頭のデータを読み込みます。今のデータに追加しますか？'))return;let mapped=incoming.map(x=>({...x,id:x.id||('import-'+Date.now()+'-'+Math.random().toString(16).slice(2,8)),female_management_number:x.female_management_number??x.femaleNo??x.management_number??'',individual_id:String(x.individual_id??x.individualId??''),birth_date:x.birth_date??'',birth_date_original:x.birth_date_original??x.birth_date??'',mother_number:x.mother_number??'',sex:x.sex??'',cow_type:x.cow_type??x.type??'',sire:x.sire??'',location_type:x.location_type??'',location_detail:x.location_detail??'',pregnancy:x.pregnancy??'妊娠していない'}));let seen=new Set(cows.map(x=>String(x.id)));mapped.forEach(x=>{if(!seen.has(String(x.id)))cows.push(x)});persist();document.getElementById('status').textContent=mapped.length+'頭分を読み込みました。';alert('読み込みました。全頭一覧で確認してください。');home()}catch(err){alert('読み込めませんでした。JSON形式のバックアップか確認してください。')}finally{e.target.value=''}};r.readAsText(f)}
+load();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(err => console.log('Service worker registration failed', err));
+  });
+}
+</script>
+</body>
+</html>
